@@ -1,0 +1,21 @@
+# ngrok-chat gunicorn logs.
+#
+# su: /home/debian/projects/ngrok-chat/logs is 0775 (debian:debian), which
+#     logrotate refuses to rotate from root without an explicit owner.
+#
+# copytruncate (NOT postrotate+restart): gunicorn keeps the log files open by
+# file descriptor. A plain rename would leave the running process writing to
+# the old inode, so the new "current" file would stay empty forever. copytruncate
+# truncates the file in place instead, so the daemon keeps writing to the same
+# (now empty) inode and no service restart is needed.
+/home/debian/projects/ngrok-chat/logs/gunicorn*.log {
+    su debian debian
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    create 0644 debian debian
+}

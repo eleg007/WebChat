@@ -1,0 +1,93 @@
+# ngrok-chat.service - the chat APP ONLY (Flask under gunicorn).
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS UNIT RUNS (and what it does NOT)
+# ---------------------------------------------------------------------------
+# This unit runs just the Flask app on 127.0.0.1:8025. It deliberately does
+# NOT start a public tunnel. The public front door (cloudflared quick tunnel,
+# ngrok, nginx, ...) is a SEPARATE concern, so the app and the tunnel can
+# restart, be upgraded, or change URLs independently of each other.
+#
+# Start the tunnel either:
+#   * via ./start.sh --tunnel=... (which also manages the app for dev use), or
+#   * as its own systemd unit, e.g. a cloudflared unit with:
+#       ExecStart=/usr/local/bin/cloudflared tunnel --url http://127.0.0.1:8025 --no-autoupdate
+#
+# NOTE: both ngrok accounts on this host are already occupied by other
+# protected services (orbit-ngrok@debian.service and romulator2k-ngrok.service)
+# - do not stop them. See README "The ngrok reality".
+#
+# ---------------------------------------------------------------------------
+# INSTALL (optional, needs sudo - NOT installed by default)
+# ---------------------------------------------------------------------------
+#   sudo cp deploy/ngrok-chat.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now ngrok-chat.service
+#
+# ---------------------------------------------------------------------------
+# WHY THESE GUNICORN FLAGS (do not "improve" them without reading the README)
+# ---------------------------------------------------------------------------
+#   --workers 1        The app holds in-memory state (an SSE Bus, the CLIENTS
+#                      presence dict, rate-limit dicts). Every extra worker
+#                      would get its OWN copy, breaking SSE fan-out and
+#                      presence. One worker is a correctness requirement.
+#   --worker-class gthread / --threads 32
+#                      Concurrency comes from threads (gunicorn switches sync
+#                      -> gthread automatically when --threads > 1; we are
+#                      explicit here). Flask's dev server is threaded too, so
+#                      behaviour matches.
+#   --timeout 0        SSE connections are held open indefinitely. gunicorn's
+#                      default 30s worker timeout would kill idle watchers.
+#   --keep-alive 30    Keep-alive for the reverse proxy / tunnel in front.
+# ---------------------------------------------------------------------------
+
+[Unit]
+Description=ngrok-chat PWA chat app (Flask + gunicorn, single worker)
+After=network-online.target
+Wants=network-online.target
+# NOTE: no BindsTo/Requires on any tunnel unit - the app must survive tunnel
+# restarts (cloudflared quick tunnels change URL on every restart anyway).
+
+[Service]
+Type=simple
+
+# The user that owns /home/debian/projects/ngrok-chat (and its data/ + .venv/).
+# Running as root is not needed and not recommended; every file the app
+# touches is owned by this user.
+User=debian
+
+WorkingDirectory=/home/debian/projects/ngrok-chat
+ExecStart=/home/debian/projects/ngrok-chat/.venv/bin/gunicorn \
+    --workers 1 \
+    --worker-class gthread \
+    --threads 32 \
+    --timeout 0 \
+    --keep-alive 30 \
+    --bind 127.0.0.1:8025 \
+    --pid /home/debian/projects/ngrok-chat/run/gunicorn.pid \
+    --error-logfile /home/debian/projects/ngrok-chat/logs/gunicorn.log \
+    --access-logfile /home/debian/projects/ngrok-chat/logs/gunicorn-access.log \
+    --capture-output \
+    app:app
+
+# Environment (uncomment to override; all are optional):
+#Environment=CHAT_PORT=8025
+#Environment=CHAT_HOST=127.0.0.1
+## Shared gate: when non-empty, every API route requires this code.
+#Environment=CHAT_ACCESS_CODE=change-me
+## Where chat.db, vapid_private.pem and push subscriptions live.
+#Environment=CHAT_DATA_DIR=/home/debian/projects/ngrok-chat/data
+## Contact identity in the VAPID JWT (mailto: or https: URL).
+#Environment=CHAT_VAPID_SUBJECT=mailto:admin@example.com
+## Raw PEM/base64 VAPID private key override (default: data/vapid_private.pem).
+#Environment=CHAT_VAPID_PRIVATE_KEY=
+
+Restart=always
+RestartSec=3
+# gunicorn gets SIGTERM on stop and exits after finishing in-flight
+# requests; give SSE-held connections a graceful window before SIGKILL.
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

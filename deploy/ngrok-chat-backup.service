@@ -1,0 +1,7 @@
+[Unit]
+Description=Daily ngrok-chat chat.db snapshot (SQLite online backup API)
+
+[Service]
+Type=oneshot
+User=debian
+ExecStart=/home/debian/projects/ngrok-chat/scripts/backup.sh

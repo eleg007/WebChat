@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Pin every relative URL (static assets, manifest, icons) to the app's
+     mount point. At /chat the document directory is /, so without this the
+     manifest would resolve to the origin root. -->
+<base href="{{ BASE }}/">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="ngrok-chat — self-hosted real-time chat with rooms, SSE streaming and push notifications.">
+<meta name="theme-color" content="#007aff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0e14" media="(prefers-color-scheme: dark)">
+<meta name="application-name" content="Chat">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-title" content="Chat">
+<title>ngrok-chat</title>
+<link rel="stylesheet" href="static/style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="static/icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="static/icons/favicon-16.png">
+<link rel="apple-touch-icon" href="static/icons/apple-touch-icon.png">
+</head>
+<body>
+
+<!-- Access-code gate (only shown when the server requires a code) -->
+<div id="gate" class="gate hidden">
+  <div class="gate-card">
+    <h1>Access Code Required</h1>
+    <p class="subtitle">Enter the shared code to join the chat.</p>
+    <form id="gate-form">
+      <label for="gate-input">Access Code</label>
+      <input id="gate-input" type="password" autocomplete="one-time-code" placeholder="Enter code" required>
+      <button class="btn-primary" type="submit">Enter</button>
+    </form>
+    <div id="gate-err" class="err" aria-live="polite"></div>
+  </div>
+</div>
+
+<!-- Login Screen -->
+<div id="login-screen" class="gate hidden">
+  <div class="gate-card">
+    <h1>Welcome Back</h1>
+    <p class="subtitle">Sign in to your account.</p>
+    <form id="login-form">
+      <label for="login-username">Username</label>
+      <input id="login-username" name="username" type="text" autocomplete="username" placeholder="username" required>
+      <label for="login-password">Password</label>
+      <input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="password" required>
+      <button class="btn-primary" type="submit">Sign In</button>
+    </form>
+    <div id="login-err" class="err" aria-live="polite"></div>
+    <p class="switch-link">Don't have an account? <a href="#" id="show-register">Create one</a></p>
+  </div>
+</div>
+
+<!-- Register Screen -->
+<div id="register-screen" class="gate hidden">
+  <div class="gate-card">
+    <h1>Create Account</h1>
+    <p class="subtitle">Pick a username and password.</p>
+    <form id="register-form">
+      <label for="reg-username">Username</label>
+      <input id="reg-username" name="username" type="text" autocomplete="username" placeholder="username" required minlength="3" maxlength="32">
+      <label for="reg-password">Password</label>
+      <input id="reg-password" name="password" type="password" autocomplete="new-password" placeholder="password (min 8 chars)" required minlength="8">
+      <label for="reg-nick">Display Name</label>
+      <input id="reg-nick" name="nick" type="text" autocomplete="name" placeholder="display name (optional)">
+      <button class="btn-primary" type="submit">Create Account</button>
+    </form>
+    <div id="register-err" class="err" aria-live="polite"></div>
+    <p class="switch-link">Already have an account? <a href="#" id="show-login">Sign In</a></p>
+  </div>
+</div>
+
+<!-- Nickname Picker (fallback for non-account users) -->
+<div id="nick-pick" class="gate hidden">
+  <div class="gate-card">
+    <h1>Pick a Nickname</h1>
+    <p class="subtitle">This is how others will see you. You can change it anytime.</p>
+    <form id="nick-form">
+      <label for="nick-input">Nickname</label>
+      <input id="nick-input" type="text" autocomplete="off" placeholder="your name" required maxlength="24">
+      <button class="btn-primary" type="submit">Start Chatting</button>
+    </form>
+    <div id="nick-err" class="err" aria-live="polite"></div>
+    <p class="switch-link"><a href="#" id="show-login-from-nick">Have an account? Sign in</a></p>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app" class="app hidden">
+
+  <!-- Sidebar — Conversation List -->
+  <aside id="sidebar" class="sidebar">
+    <header class="sidebar-head">
+      <span class="brand">ngrok-chat</span>
+      <button id="menu" class="ghost only-mobile" aria-label="Open conversations" title="Conversations">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
+    </header>
+
+    <div class="sidebar-search" role="search">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="search" id="room-search" placeholder="Search conversations" aria-label="Search conversations">
+    </div>
+
+    <ul id="rooms" class="rooms-list" role="listbox" aria-label="Conversations"></ul>
+
+    <footer class="sidebar-foot">
+      <div class="user-row">
+        <div id="user-avatar" class="user-avatar"></div>
+        <div class="user-info">
+          <div id="user-name" class="user-name">—</div>
+          <div id="user-handle" class="user-handle">@username</div>
+        </div>
+      </div>
+      <div class="sidebar-actions">
+        <button id="btn-logout" class="btn-ghost" type="button">Sign Out</button>
+        <button id="btn-profile" class="btn-primary" type="button">Profile</button>
+      </div>
+      <div class="notif-pref">
+        <input type="checkbox" id="pref-notify-preview" checked>
+        <label for="pref-notify-preview">Show message in notifications</label>
+      </div>
+    </footer>
+  </aside>
+
+  <!-- Scrim for mobile drawer -->
+  <div id="scrim" class="scrim hidden" aria-hidden="true"></div>
+
+  <!-- Thread Pane -->
+  <main class="thread">
+    <header class="thread-head">
+      <h1 id="room-title" class="thread-title">#general</h1>
+      <div class="thread-meta">
+        <div class="presence-indicator">
+          <span class="presence-dot" aria-hidden="true"></span>
+          <span id="conn-text" class="conn">connecting</span>
+        </div>
+        <div class="thread-actions">
+          <button id="btn-rooms" class="icon-btn" aria-label="Room info" title="Room info">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          </button>
+          <button id="btn-search" class="icon-btn" aria-label="Search messages" title="Search">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="messages-wrapper" class="messages-wrapper">
+      <div id="messages" class="messages" role="log" aria-live="polite" aria-atomic="false"></div>
+      <button id="load-older" class="load-older hidden" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 11 12 6 7 11"></polyline><line x1="12" y1="6" x2="12" y2="18"></line></svg>
+        Load older
+      </button>
+    </div>
+
+    <form class="composer" id="composer">
+      <div class="composer-input-wrap">
+        <input id="input" type="text" placeholder="Message" autocomplete="off" aria-label="Message">
+      </div>
+      <button id="send" class="send-btn" type="submit" aria-label="Send">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+      </button>
+    </form>
+  </main>
+</main>
+
+<div id="offline-banner" class="offline-banner hidden" aria-live="assertive">You're offline. Messages will send when you reconnect.</div>
+
+</div>
+
+<script src="static/app.js"></script>
+</body>
+</html>

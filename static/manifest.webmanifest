@@ -1,0 +1,31 @@
+{
+  "name": "ngrok-chat",
+  "short_name": "Chat",
+  "description": "Self-hosted real-time chat with rooms, SSE streaming and push notifications.",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b0e14",
+  "theme_color": "#0b0e14",
+  "categories": ["social", "communication"],
+  "icons": [
+    { "src": "/chat/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/chat/static/icons/icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "/chat/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/chat/static/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/chat/static/icons/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "/chat/static/icons/favicon-32.png", "sizes": "32x32", "type": "image/png", "purpose": "any" },
+    { "src": "/chat/static/icons/favicon-16.png", "sizes": "16x16", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    {
+      "name": "General",
+      "short_name": "General",
+      "description": "General chat room",
+      "url": "./#general",
+      "icons": [{ "src": "/chat/static/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+[2026-10-22 12:00:22,319] ERROR in app: Exception on /api/auth/login [POST]
+Traceback (most recent call last):
+  File "/home/debian/projects/ngrok-chat/.venv/lib/python3.13/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/debian/projects/ngrok-chat/.venv/lib/python3.13/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/debian/projects/ngrok-chat/.venv/lib/python3.13/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/debian/projects/ngrok-chat/.venv/lib/python3.13/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/debian/projects/ngrok-chat/app.py", line 704, in api_auth_login
+    if not row or not ph.verify(row["pass_hash"], password):
+                      ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/debian/projects/ngrok-chat/.venv/lib/python3.13/site-packages/argon2/_password_hasher.py", line 258, in verify
+    return verify_secret(
+        hash, _ensure_bytes(password, self.encoding), hash_type
+    )
+  File "/home/debian/projects/ngrok-chat/.venv/lib/python3.13/site-packages/argon2/low_level.py", line 204, in verify_secret
+    raise VerifyMismatchError(error_to_str(rv))
+argon2.exceptions.VerifyMismatchError: The password does not match the supplied hash
+[2026-10-22 12:00:23,355] ERROR in app: Exception on /api/auth/login [POST]
+Traceback (most recent call last):
+  File "/home/debian/projects/ngrok-chat/.venv/lib/python3.13/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/debian/projects/ngrok-chat/.venv/lib/python3.13/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/home/debian/projects/ngrok-chat/.venv/lib/python3.13/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/debian/projects/ngrok-chat/.venv/lib/python3.13/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/debian/projects/ngrok-chat/app.py", line 704, in api_auth_login
+    if not row or not ph.verify(row["pass_hash"], password):
+                      ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/debian/projects/ngrok-chat/.venv/lib/python3.13/site-packages/argon2/_password_hasher.py", line 258, in verify
+    return verify_secret(
+        hash, _ensure_bytes(password, self.encoding), hash_type
+    )
+  File "/home/debian/projects/ngrok-chat/.venv/lib/python3.13/site-packages/argon2/low_level.py", line 204, in verify_secret
+    raise VerifyMismatchError(error_to_str(rv))
+argon2.exceptions.VerifyMismatchError: The password does not match the supplied hash

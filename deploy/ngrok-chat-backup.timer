@@ -1,0 +1,10 @@
+[Unit]
+Description=Run ngrok-chat SQLite backup daily at 04:30
+
+[Timer]
+# 04:30 — deliberately avoids 04:00, which is taken by mcserver-backup.timer.
+OnCalendar=*-*-* 04:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
